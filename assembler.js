@@ -5,6 +5,9 @@
 *  Adapted by Nick Morgan
 *  https://github.com/skilldrick/6502js
 *
+*  Generalised and extended by Ed Spittles
+*  https://github.com/BigEd/6502js
+*
 *  Released under the GNU General Public License
 *  see http://gnu.org/licenses/gpl.html
 */
@@ -49,6 +52,11 @@ function SimulatorWidget(node) {
     });
     $node.find('.stepButton').click(simulator.debugExec);
     $node.find('.gotoButton').click(simulator.gotoAddr);
+    $node.find('.modeSwitches').change(function () {
+      var dw = parseInt($("input[@name=dataWidth]:checked").val());
+      simulator.updateDw(dw);
+      simulator.reset();
+    });
     $node.find('.notesButton').click(ui.showNotes);
     $node.find('.code').keypress(simulator.stop);
     $node.find('.code').keypress(ui.initialize);
@@ -278,6 +286,20 @@ function SimulatorWidget(node) {
     var debug = false;
     var monitoring = false;
     var executeId;
+
+    // supporting various data bus sizes for 6502, 65Org16 and 65Org32
+    var dw, aw, dm, am, ms;
+
+    function updateDw(w){
+      simulator.dw = w;           // data bus, register and accumulator width
+      var aw = (w>16) ? w : w*2;  // address bus and program counter width
+      simulator.aw = aw;
+      // 32-bit widths are a little delicate in javascript
+      simulator.dm = (1<<w)-1;    // data mask
+      simulator.am = (1<<aw)-1;   // address mask
+      simulator.ms = (1<<aw)-1;   // memory size mask (highest memory address)
+      return ms;
+    }
 
     //set zero and negative processor flags based on result
     function setNVflags(value) {
@@ -1618,6 +1640,10 @@ function SimulatorWidget(node) {
 
     // reset() - Reset CPU and memory.
     function reset() {
+      if (typeof simulator.dw === "undefined") {
+         updateDw(8);  // 6502 has 8 bit databus and is the default CPU
+      }
+
       display.reset();
       for (var i = 0; i < 0x600; i++) { // clear ZP, stack and screen
         memory.set(i, 0x00);
@@ -1646,6 +1672,12 @@ function SimulatorWidget(node) {
       gotoAddr: gotoAddr,
       reset: reset,
       stop: stop,
+      dw: dw,
+      aw: aw,
+      dm: dm,
+      am: am,
+      ms: ms,
+      updateDw: updateDw,
       toggleMonitor: toggleMonitor
     };
   }
@@ -2466,15 +2498,21 @@ function SimulatorWidget(node) {
   }
 
 
-  function addr2hex(addr) {
-    return num2hex((addr >> 8) & 0xff) + num2hex(addr & 0xff);
+  function addr2hex(nr) {
+    return num2hexwidth(nr, simulator.aw);
   }
 
   function num2hex(nr) {
-    var str = "0123456789abcdef";
-    var hi = ((nr & 0xf0) >> 4);
-    var lo = (nr & 15);
-    return str.substring(hi, hi + 1) + str.substring(lo, lo + 1);
+    return num2hexwidth(nr, simulator.dw);
+  }
+
+  function num2hexwidth(nr,w) {
+    var val = "";
+    for (i=0; i<w/4; i++){
+       val = (nr & 0xf).toString(16) + val;
+       nr = nr >> 4;
+    }
+    return val;
   }
 
   // message() - Prints text in the message window

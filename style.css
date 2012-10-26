@@ -25,7 +25,7 @@
   padding: 6px;
   border: 1px solid black;
   width: 420px;
-  height: 290px;
+  height: 480px;
   font-family: monospace;
   overflow: auto;
   float: left;
@@ -40,9 +40,18 @@
   margin-top: 6px;
   padding: 3px;
   padding-top: 8px;
-  height: 125px;
   width: 152px;
   text-align: center;
+  float: right;
+}
+
+.modeSwitches {
+  border: 1px black solid;
+  margin-top: 6px;
+  padding: 3px;
+  padding-top: 8px;
+  width: 152px;
+  text-align: center; 
   float: right;
 }
 
