@@ -2047,15 +2047,15 @@ function SimulatorWidget(node) {
       for (var o = 0; o < Opcodes.length; o++) {
         if (Opcodes[o][0] === command) {
           if (checkSingle(param, Opcodes[o][11])) { return true; }
-          if (checkImmediate(param, Opcodes[o][1])) { return true; }
-          if (checkZeroPage(param, Opcodes[o][2])) { return true; }
-          if (checkZeroPageX(param, Opcodes[o][3])) { return true; }
-          if (checkZeroPageY(param, Opcodes[o][4])) { return true; }
-          if (checkAbsoluteX(param, Opcodes[o][6])) { return true; }
-          if (checkAbsoluteY(param, Opcodes[o][7])) { return true; }
           if (checkIndirect(param, Opcodes[o][8])) { return true; }
           if (checkIndirectX(param, Opcodes[o][9])) { return true; }
           if (checkIndirectY(param, Opcodes[o][10])) { return true; }
+          if (checkImmediate(param, Opcodes[o][1])) { return true; }
+          if (checkZeroPageX(param, Opcodes[o][3])) { return true; }
+          if (checkZeroPageY(param, Opcodes[o][4])) { return true; }
+          if (checkZeroPage(param, Opcodes[o][2])) { return true; }
+          if (checkAbsoluteX(param, Opcodes[o][6])) { return true; }
+          if (checkAbsoluteY(param, Opcodes[o][7])) { return true; }
           if (checkAbsolute(param, Opcodes[o][5])) { return true; }
           if (checkBranch(param, Opcodes[o][12])) { return true; }
         }
@@ -2222,12 +2222,25 @@ function SimulatorWidget(node) {
 
     // checkAbsoluteX() - Check if param is ABSX and push value
     function checkAbsoluteX(param, opcode) {
+console.log("checkAbsoluteX",param, opcode)
       var number, value, addr;
       if (opcode === null) { return false; }
-      if (param.match(/^\$[0-9a-f]+,X$/i)) {
+      if (param.match(/^.*\w+.*,X$/i)) {
+console.log("OK:",param, opcode)
         pushByte(opcode);
-        number = param.replace(/^\$([0-9a-f]*),X/i, "$1");
-        value = parseInt(number, 16);
+        param = param.replace(/^(.*),X$/i, "$1");
+        param = param.replace(/\$/g, "0x");
+console.log("pre:",param)
+        var words=param.match(/(\w+)/g)
+        for(var w=0; w<words.length; w++){
+console.log("w:",words[w])
+           if(isNaN(words[w])){
+              re=new RegExp("\\b"+words[w]+"\\b")
+              param = param.replace(re,labels.getPC(words[w]));
+console.log("subs:",param, labels.getPC(words[w]))
+           }
+        }
+        value = eval(param);
         if (value < 0 || value > simulator.am) { return false; }
         pushWord(value);
         return true;
