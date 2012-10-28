@@ -295,9 +295,8 @@ function SimulatorWidget(node) {
       simulator.aw = aw;
       // 32-bit widths are a little delicate in javascript
       simulator.dm = (1<<w)-1;    // data mask
-      simulator.am = (1<<aw)-1;   // address mask
-      simulator.ms = (1<<aw)-1;   // memory size mask (highest memory address)
-      return ms;
+      simulator.am = 4*(1<<(aw-2))-1;   // address mask
+      simulator.ms = 4*(1<<(aw-2))-1;   // memory size mask (highest memory address)
     }
 
     //set zero and negative processor flags based on result
@@ -1639,16 +1638,14 @@ function SimulatorWidget(node) {
       if (labels.find(inp)) {
         addr = labels.getPC(inp);
       } else {
-        var addressbits=simulator.aw>>2;
-        if (inp.match(/^0x[0-9a-fA-F]{1,addressbits}$/i)) {
+        if (inp.match(/^0x[0-9a-f]+$/i)) {
           inp = inp.replace(/^0x/, "");
-          addr = parseInt(inp, 16);
-        } else if (inp.match(/^\$[0-9a-fA-F]{1,addressbits}$/i)) {
+        } else if (inp.match(/^\$[0-9a-f]+$/i)) {
           inp = inp.replace(/^\$/, "");
-          addr = parseInt(inp, 16);
         }
+        addr = parseInt(inp, 16);
       }
-      if (addr === 0) {
+      if (addr === 0 || addr < 0 || addr > simulator.ms) {
         message("Unable to find/parse given address/label");
       } else {
         regPC = addr;
@@ -1912,6 +1909,7 @@ function SimulatorWidget(node) {
       for (var i = 0; i < lines.length; i++) {
         if (!assembleLine(lines[i], i)) {
           codeAssembleddOK = false;
+          message("line "+i+" does not assemble: "+lines[i]);
           break;
         }
       }
@@ -1972,7 +1970,7 @@ function SimulatorWidget(node) {
 
       command = command.toUpperCase();
 
-      if (input.match(/^\*\s*=\s*\$?[0-9a-fA-F]*$/)) {
+      if (input.match(/^\*\s*=\s*\$?[0-9a-f]+$/i)) {
         // equ spotted
         param = input.replace(/^\s*\*\s*=\s*/, "");
         if (param[0] === "$") {
@@ -1981,8 +1979,8 @@ function SimulatorWidget(node) {
         } else {
           addr = parseInt(param, 10);
         }
-        if ((addr < 0) || (addr > 0xffff)) {
-          message("Unable to relocate code outside 64k memory");
+        if (addr < 0 || addr > simulator.ms) {
+          message("Unable to relocate code outside memory");
           return false;
         }
         defaultCodePC = addr;
@@ -2070,19 +2068,17 @@ function SimulatorWidget(node) {
     function checkImmediate(param, opcode) {
       var value, label, hilo, addr;
       if (opcode === null) { return false; }
-      var immnibbles = simulator.dw/4;
-      if (param.match(/^#\$[0-9a-fA-F]{1,immnibbles}$/i)) {
+      if (param.match(/^#\$[0-9a-f]+$/i)) {
         pushByte(opcode);
         value = parseInt(param.replace(/^#\$/, ""), 16);
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
         return true;
       }
-      var immdigits = 0|(simulator.dw/3.2+.5);
-      if (param.match(/^#[0-9]{1,immdigits}$/i)) {
+      if (param.match(/^#[0-9]+$/i)) {
         pushByte(opcode);
         value = parseInt(param.replace(/^#/, ""), 10);
-        if (value < 0 || value > simulator.dm) { return false; }
+        if (value < 0 || value > simulator.dm) { message("bad value:"+value);return false; }
         pushByte(value);
         return true;
       }
@@ -2115,10 +2111,10 @@ function SimulatorWidget(node) {
     function checkIndirect(param, opcode) {
       var value;
       if (opcode === null) { return false; }
-      if (param.match(/^\(\$[0-9a-fA-F]{4}\)$/i)) {
+      if (param.match(/^\(\$[0-9a-f]+\)$/i)) {
         pushByte(opcode);
-        value = param.replace(/^\(\$([0-9a-fA-F]{4}).*$/i, "$1");
-        if (value < 0 || value > 0xffff) { return false; }
+        value = param.replace(/^\(\$([0-9a-f]+).*$/i, "$1");
+        if (value < 0 || value > simulator.am) { return false; }
         pushWord(parseInt(value, 16));
         return true;
       }
@@ -2129,10 +2125,9 @@ function SimulatorWidget(node) {
     function checkIndirectX(param, opcode) {
       var value;
       if (opcode === null) { return false; }
-      var zpnibbles = simulator.dw/4;
-      if (param.match(/^\(\$[0-9a-fA-F]{1,zpnibbles},X\)$/i)) {
+      if (param.match(/^\(\$[0-9a-f]+,X\)$/i)) {
         pushByte(opcode);
-        value = param.replace(/^\(\$([0-9a-fA-F]{1,zpnibbles}).*$/i, "$1");
+        value = param.replace(/^\(\$([0-9a-f]+).*$/i, "$1");
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(parseInt(value, 16));
         return true;
@@ -2144,10 +2139,9 @@ function SimulatorWidget(node) {
     function checkIndirectY(param, opcode) {
       var value;
       if (opcode === null) { return false; }
-      var zpnibbles = simulator.dw/4;
-      if (param.match(/^\(\$[0-9a-fA-F]{1,zpnibbles}\),Y$/i)) {
+      if (param.match(/^\(\$[0-9a-f]+\),Y$/i)) {
         pushByte(opcode);
-        value = param.replace(/^\([\$]([0-9a-fA-F]{1,zpnibbles}).*$/i, "$1");
+        value = param.replace(/^\([\$]([0-9a-f]+).*$/i, "$1");
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(parseInt(value, 16));
         return true;
@@ -2168,16 +2162,14 @@ function SimulatorWidget(node) {
     function checkZeroPage(param, opcode) {
       var value;
       if (opcode === null) { return false; }
-      var zpnibbles = simulator.dw/4;
-      if (param.match(/^\(\$[0-9a-fA-F]{1,zpnibbles},X\)$/i)) {
+      if (param.match(/^\(\$[0-9a-f]+,X\)$/i)) {
         pushByte(opcode);
         value = parseInt(param.replace(/^\$/, ""), 16);
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
         return true;
       }
-      var zpdigits = 0|(simulator.dw/3.2+.5);
-      if (param.match(/^[0-9]{1,zpdigits}$/i)) {
+      if (param.match(/^[0-9]+$/i)) {
         value = parseInt(param, 10);
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(opcode);
@@ -2191,13 +2183,11 @@ function SimulatorWidget(node) {
     function checkAbsoluteX(param, opcode) {
       var number, value, addr;
       if (opcode === null) { return false; }
-      var addrnibbleslo = simulator.dw/4+1;
-      var addrnibbleshi = simulator.aw/4;
-      if (param.match(/^\$[0-9a-fA-F]{addrnibbleslo,addrnibbleshi},X$/i)) {
+      if (param.match(/^\$[0-9a-f]+,X$/i)) {
         pushByte(opcode);
-        number = param.replace(/^\$([0-9a-fA-F]*),X/i, "$1");
+        number = param.replace(/^\$([0-9a-f]*),X/i, "$1");
         value = parseInt(number, 16);
-        if (value < 0 || value > simulator.am) { return false; }
+        if (value <= simulator.dm || value > simulator.am) { return false; }
         pushWord(value);
         return true;
       }
@@ -2223,13 +2213,11 @@ function SimulatorWidget(node) {
     function checkAbsoluteY(param, opcode) {
       var number, value, addr;
       if (opcode === null) { return false; }
-      var addrnibbleslo = simulator.dw/4+1;
-      var addrnibbleshi = simulator.aw/4;
-      if (param.match(/^\$[0-9a-fA-F]{addrnibbleslo,addrnibbleshi},Y$/i)) {
+      if (param.match(/^\$[0-9a-f]+,Y$/i)) {
         pushByte(opcode);
-        number = param.replace(/^\$([0-9a-fA-F]*),Y/i, "$1");
+        number = param.replace(/^\$([0-9a-f]*),Y/i, "$1");
         value = parseInt(number, 16);
-        if (value < 0 || value > simulator.am) { return false; }
+        if (value <= simulator.dm || value > simulator.am) { return false; }
         pushWord(value);
         return true;
       }
@@ -2241,7 +2229,7 @@ function SimulatorWidget(node) {
         pushByte(opcode);
         if (labels.find(param)) {
           addr = labels.getPC(param);
-          if (addr < 0 || addr > simulator.am) { return false; }
+          if (addr <= simulator.dm || addr > simulator.am) { return false; }
           pushWord(addr);
           return true;
         } else {
@@ -2256,17 +2244,15 @@ function SimulatorWidget(node) {
     function checkZeroPageX(param, opcode) {
       var number, value;
       if (opcode === null) { return false; }
-      var zpnibbles = simulator.dw/4;
-      if (param.match(/^\$[0-9a-fA-F]{1,zpnibbles},X/i)) {
+      if (param.match(/^\$[0-9a-f]+,X/i)) {
         pushByte(opcode);
-        number = param.replace(/^\$([0-9a-fA-F]{1,zpnibbles}),X/i, "$1");
+        number = param.replace(/^\$([0-9a-f]+),X/i, "$1");
         value = parseInt(number, 16);
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
         return true;
       }
-      var zpdigits = 0|(simulator.dw/3.2+.5);
-      if (param.match(/^[0-9]{1,zpdigits},X/i)) {
+      if (param.match(/^[0-9]+,X/i)) {
         pushByte(opcode);
         number = param.replace(/^([0-9]{1,3}),X/i, "$1");
         value = parseInt(number, 10);
@@ -2280,19 +2266,17 @@ function SimulatorWidget(node) {
     function checkZeroPageY(param, opcode) {
       var number, value;
       if (opcode === null) { return false; }
-      var zpnibbles = simulator.dw/4;
-      if (param.match(/^\$[0-9a-fA-F]{1,zpnibbles},Y/i)) {
+      if (param.match(/^\$[0-9a-f]+,Y/i)) {
         pushByte(opcode);
-        number = param.replace(/^\$([0-9a-fA-F]{1,zpnibbles}),Y/i, "$1");
+        number = param.replace(/^\$([0-9a-f]+),Y/i, "$1");
         value = parseInt(number, 16);
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
         return true;
       }
-      var zpdigits = 0|(simulator.dw/3.2+.5);
-      if (param.match(/^[0-9]{1,zpdigits},Y/i)) {
+      if (param.match(/^[0-9]+,Y/i)) {
         pushByte(opcode);
-        number = param.replace(/^([0-9]{1,zpdigits}),Y/i, "$1");
+        number = param.replace(/^([0-9]+),Y/i, "$1");
         value = parseInt(number, 10);
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
@@ -2306,18 +2290,15 @@ function SimulatorWidget(node) {
       var value, number, addr;
       if (opcode === null) { return false; }
       pushByte(opcode);
-      var addrnibbleslo = simulator.dw/4+1;  
-      var addrnibbleshi = simulator.aw/4;
-      if (param.match(/^\$[0-9a-fA-F]{addrnibbleslo,addrnibbleshi}$/i)) {
+      if (param.match(/^\$[0-9a-f]+$/i)) {
         value = parseInt(param.replace(/^\$/, ""), 16);
-        if (value < 0 || value > simulator.am) { return false; }
+        if (value <= simulator.dm || value > simulator.am) { return false; }
         pushWord(value);
         return true;
       }
-      var absdigits = 0|(simulator.aw/3.2+.5);
-      if (param.match(/^[0-9]{1,absdigits}$/i)) {
+      if (param.match(/^[0-9]+$/i)) {
         value = parseInt(param, 10);
-        if (value < 0 || value > simulator.am) { return false; }
+        if (value <= simulator.dm || value > simulator.am) { return false; }
         pushWord(value);
         return(true);
       }
@@ -2325,7 +2306,7 @@ function SimulatorWidget(node) {
       if (param.match(/^\w+$/)) {
         if (labels.find(param)) {
           addr = (labels.getPC(param));
-          if (addr < 0 || addr > simulator.am) { return false; }
+          if (addr <= simulator.dm || addr > simulator.am) { return false; }
           pushWord(addr);
           return true;
         } else {
