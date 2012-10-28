@@ -1772,6 +1772,10 @@ function SimulatorWidget(node) {
       return true;
     }
 
+    function set(name, value) {
+      return push(name + "|" + value);
+    }
+
     // push() - Push label to array. Return false if label already exists.
     function push(name) {
       if (find(name)) {
@@ -1834,6 +1838,7 @@ function SimulatorWidget(node) {
       indexLines: indexLines,
       find: find,
       getPC: getPC,
+      set: set,
       displayMessage: displayMessage,
       reset: reset
     };
@@ -1998,20 +2003,22 @@ function SimulatorWidget(node) {
 
       command = command.toUpperCase();
 
-      if (input.match(/^\*\s*=\s*\$?[0-9a-f]+$/i)) {
+      if (input.match(/^(\*|\w+)\s*=\s*\$?[0-9a-f]+$/i)) {
         // equ spotted
-        param = input.replace(/^\s*\*\s*=\s*/, "");
+        command = input.replace(/^(\*|\w+)\s*=.*$/, "$1");
+        param = input.replace(/^.*=\s*/, "");
         if (param[0] === "$") {
-          param = param.replace(/^\$/, "");
-          addr = parseInt(param, 16);
-        } else {
-          addr = parseInt(param, 10);
+          param = param.replace(/^\$/, "0x");
         }
+        addr = parseInt(param);
         if (addr < 0 || addr > simulator.ms) {
           message("Unable to relocate code outside memory");
           return false;
         }
-        defaultCodePC = addr;
+        if (command == "*")
+          defaultCodePC = addr;
+        else
+          labels.set(command, addr);
         return true;
       }
 
