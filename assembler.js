@@ -2003,18 +2003,23 @@ function SimulatorWidget(node) {
 
       command = command.toUpperCase();
 
-      if (input.match(/^(\*|\w+)\s*=\s*\$?[0-9a-f]+$/i)) {
+      if (input.match(/^(\*|\w+)\s*=/i)) {
         // equ spotted
-        command = input.replace(/^(\*|\w+)\s*=.*$/, "$1");
         param = input.replace(/^.*=\s*/, "");
-        if (param[0] === "$") {
-          param = param.replace(/^\$/, "0x");
+        param = param.replace(/\$/g, "0x");
+        var words=param.match(/(\w+)/g)
+        for(var w=0; w<words.length; w++){
+           if(isNaN(words[w])){
+              re=new RegExp("\\b"+words[w]+"\\b")
+              param = param.replace(re,labels.getPC(words[w]));
+           }
         }
-        addr = parseInt(param);
+        addr = eval(param);
         if (addr < 0 || addr > simulator.ms) {
           message("Unable to relocate code outside memory");
           return false;
         }
+        command = input.replace(/^(\*|\w+)\s*=.*$/, "$1");
         if (command == "*")
           defaultCodePC = addr;
         else
