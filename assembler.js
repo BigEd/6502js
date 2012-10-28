@@ -1430,7 +1430,7 @@ function SimulatorWidget(node) {
 
       i42: function () {
         var value = popByte();
-        console.log(String.fromCharCode(regA));
+        message(String.fromCharCode(regA));
         //WDM  -- pseudo op to output a char
       },
 
@@ -1698,6 +1698,7 @@ function SimulatorWidget(node) {
     function stop() {
       codeRunning = false;
       clearInterval(executeId);
+      message("\nStopped\n");
     }
 
     function toggleMonitor() {
@@ -2561,7 +2562,9 @@ function SimulatorWidget(node) {
 
   // message() - Prints text in the message window
   function message(text) {
-    $node.find('.messages code').append(text + '\n').scrollTop(10000);
+    if (text.length>1)
+      text += '\n'; // allow putc operations from the simulator (WDM opcode)
+    $node.find('.messages code').append(text).scrollTop(10000);
   }
 
 
