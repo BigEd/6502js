@@ -1428,6 +1428,12 @@ function SimulatorWidget(node) {
         //NOP
       },
 
+      i42: function () {
+        var value = popByte();
+        console.log(String.fromCharCode(regA));
+        //WDM  -- pseudo op to output a char
+      },
+
       iec: function () {
         var value = memory.get(popWord());
         doCompare(regX, value);
@@ -1876,6 +1882,7 @@ function SimulatorWidget(node) {
       ["PLP", null, null, null, null, null, null, null, null, null, null, 0x28, null],
       ["STX", null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null],
       ["STY", null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null],
+      ["WDM", 0x42, 0x42, null, null, null, null, null, null, null, null, null, null],
       ["---", null, null, null, null, null, null, null, null, null, null, null, null]
     ];
 
