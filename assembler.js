@@ -2479,7 +2479,7 @@ function SimulatorWidget(node) {
         },
         toString: function () {
           var bytesString = bytes.map(num2hex).join(' ');
-          var padding = Array(11 - bytesString.length).join(' ');
+          var padding = Array(2+3*(1+simulator.dw/4) - bytesString.length).join(' ');
           return '$' + addr2hex(address) + '    ' + bytesString + padding + opCode +
             ' ' + formatArguments(args);
         }
@@ -2515,8 +2515,9 @@ function SimulatorWidget(node) {
         currentAddress++;
       }
 
-      var html = 'Address  Hexdump   Dissassembly\n';
-      html +=    '-------------------------------\n';
+      var html = 'Address' + Array(simulator.aw/4-1).join(' ');
+      html += 'Hexdump' + Array(3*simulator.dw/4-2).join(' ') + 'Dissassembly\n';
+      html += Array(simulator.aw/4 + 2 + 3*simulator.dw/4 + 20).join('-')+'\n';
       html += instructions.join('\n');
       openPopup(html, 'Disassembly');
     }
