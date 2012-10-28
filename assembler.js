@@ -52,6 +52,7 @@ function SimulatorWidget(node) {
     });
     $node.find('.stepButton').click(simulator.debugExec);
     $node.find('.gotoButton').click(simulator.gotoAddr);
+    $node.find('.turboButton').click(simulator.toggleTurbo);
     $node.find('.modeSwitches').change(function () {
       var dw = parseInt($("input[@name=dataWidth]:checked").val());
       simulator.updateDw(dw);
@@ -1567,7 +1568,7 @@ function SimulatorWidget(node) {
         var prevPC = regPC;
         var prevprevPC = regPC;
         // use a prime number of iterations to avoid aliasing effects
-        for (var w = 0; w < 97; w++) {
+        for (var w = 0; w < simulator.multiExecuteSteps; w++) {
           execute();
           if (!codeRunning){
             message("Program stopped, previous instruction fetched at PC=$" + addr2hex(prevprevPC));
@@ -1644,6 +1645,16 @@ function SimulatorWidget(node) {
       updateMonitor();
     }
 
+    function toggleTurbo() {
+      if (simulator.multiExecuteSteps == 97) {
+        simulator.multiExecuteSteps = 100097;
+        $node.find('.turboButton').attr("value", "Turbo (on)");
+      } else {
+        simulator.multiExecuteSteps = 97;
+        $node.find('.turboButton').attr("value", "Turbo (off)");
+      }
+    }
+
     // gotoAddr() - Set PC to address (or address of label)
     function gotoAddr() {
       var inp = prompt("Enter address or label", "");
@@ -1682,6 +1693,7 @@ function SimulatorWidget(node) {
     function reset() {
       if (typeof simulator.dw === "undefined") {
          updateDw(8);  // 6502 has 8 bit databus and is the default CPU
+         simulator.multiExecuteSteps = 97;
       }
 
       display.reset();
@@ -1711,6 +1723,7 @@ function SimulatorWidget(node) {
       stopDebugger: stopDebugger,
       debugExec: debugExec,
       gotoAddr: gotoAddr,
+      toggleTurbo: toggleTurbo,
       reset: reset,
       stop: stop,
       dw: dw,
