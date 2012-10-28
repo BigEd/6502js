@@ -295,7 +295,7 @@ function SimulatorWidget(node) {
       var aw = (w>16) ? w : w*2;  // address bus and program counter width
       simulator.aw = aw;
       // 32-bit widths are a little delicate in javascript
-      simulator.dm = (1<<w)-1;    // data mask
+      simulator.dm = 4*(1<<(w-2))-1;    // data mask
       simulator.am = 4*(1<<(aw-2))-1;   // address mask
       simulator.ms = 4*(1<<(aw-2))-1;   // memory size mask (highest memory address)
     }
@@ -2457,10 +2457,9 @@ function SimulatorWidget(node) {
 
         if (isBranchInstruction()) {
           var destination = address + 2;
-          if (args[0] > 0x7f) {
-            destination -= 0x100 - args[0];
-          } else {
-            destination += args[0];
+          destination += args[0];
+          if (args[0] > simulator.dm/2) {
+            destination -= simulator.dm + 1;
           }
           argsString = addr2hex(destination);
         }
