@@ -2169,7 +2169,7 @@ function SimulatorWidget(node) {
     function checkZeroPage(param, opcode) {
       var value;
       if (opcode === null) { return false; }
-      if (param.match(/^\(\$[0-9a-f]+,X\)$/i)) {
+      if (param.match(/^\$[0-9a-f]+$/i)) {
         pushByte(opcode);
         value = parseInt(param.replace(/^\$/, ""), 16);
         if (value < 0 || value > simulator.dm) { return false; }
