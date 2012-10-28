@@ -2078,7 +2078,7 @@ function SimulatorWidget(node) {
       if (param.match(/^#[0-9]+$/i)) {
         pushByte(opcode);
         value = parseInt(param.replace(/^#/, ""), 10);
-        if (value < 0 || value > simulator.dm) { message("bad value:"+value);return false; }
+        if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
         return true;
       }
@@ -2187,7 +2187,7 @@ function SimulatorWidget(node) {
         pushByte(opcode);
         number = param.replace(/^\$([0-9a-f]*),X/i, "$1");
         value = parseInt(number, 16);
-        if (value <= simulator.dm || value > simulator.am) { return false; }
+        if (value < 0 || value > simulator.am) { return false; }
         pushWord(value);
         return true;
       }
@@ -2217,7 +2217,7 @@ function SimulatorWidget(node) {
         pushByte(opcode);
         number = param.replace(/^\$([0-9a-f]*),Y/i, "$1");
         value = parseInt(number, 16);
-        if (value <= simulator.dm || value > simulator.am) { return false; }
+        if (value < 0 || value > simulator.am) { return false; }
         pushWord(value);
         return true;
       }
@@ -2229,7 +2229,7 @@ function SimulatorWidget(node) {
         pushByte(opcode);
         if (labels.find(param)) {
           addr = labels.getPC(param);
-          if (addr <= simulator.dm || addr > simulator.am) { return false; }
+          if (addr < 0 || addr > simulator.am) { return false; }
           pushWord(addr);
           return true;
         } else {
@@ -2292,13 +2292,13 @@ function SimulatorWidget(node) {
       pushByte(opcode);
       if (param.match(/^\$[0-9a-f]+$/i)) {
         value = parseInt(param.replace(/^\$/, ""), 16);
-        if (value <= simulator.dm || value > simulator.am) { return false; }
+        if (value < 0 || value > simulator.am) { return false; }
         pushWord(value);
         return true;
       }
       if (param.match(/^[0-9]+$/i)) {
         value = parseInt(param, 10);
-        if (value <= simulator.dm || value > simulator.am) { return false; }
+        if (value < 0 || value > simulator.am) { return false; }
         pushWord(value);
         return(true);
       }
@@ -2306,7 +2306,7 @@ function SimulatorWidget(node) {
       if (param.match(/^\w+$/)) {
         if (labels.find(param)) {
           addr = (labels.getPC(param));
-          if (addr <= simulator.dm || addr > simulator.am) { return false; }
+          if (addr < 0 || addr > simulator.am) { return false; }
           pushWord(addr);
           return true;
         } else {
