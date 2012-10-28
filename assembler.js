@@ -1564,10 +1564,17 @@ function SimulatorWidget(node) {
 
     function multiExecute() {
       if (!debug) {
+        var prevPC = regPC;
+        var prevprevPC = regPC;
         // use a prime number of iterations to avoid aliasing effects
-
         for (var w = 0; w < 97; w++) {
           execute();
+          if (!codeRunning){
+            message("Program stopped, previous instruction fetched at PC=$" + addr2hex(prevprevPC));
+            break
+          }
+          prevprevPC = prevPC;
+          prevPC = regPC;
         }
       }
       updateDebugInfo();
