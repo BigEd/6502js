@@ -2070,11 +2070,12 @@ function SimulatorWidget(node) {
       }
       if (addr === -1) { pushWord(0x00); return false; }
       pushByte(opcode);
-      if (addr < (defaultCodePC - 0x600)) {  // Backwards?
-        pushByte((simulator.dm - ((defaultCodePC - 0x600) - addr)) & simulator.dm);
-        return true;
+      var distance = addr - defaultCodePC - 1;
+      if (distance < -simulator.dm/2-1 || distance > simulator.dm/2) {
+        message("Branch distance " + distance + " is out of range at $" + addr2hex(defaultCodePC-1));
+        return false; // out of bounds
       }
-      pushByte((addr - (defaultCodePC - 0x600) - 1) & simulator.dm);
+      pushByte((distance + simulator.dm+1)& simulator.dm);
       return true;
     }
 
