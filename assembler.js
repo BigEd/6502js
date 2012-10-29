@@ -660,8 +660,8 @@ function SimulatorWidget(node) {
         var addr = popByte();
         var value = memory.get(addr);
         setCarryFlagFromBit7(value);
-        value += value;
-        value |= sf;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
+        value += sf;
         memory.storeByte(addr, value);
         ROL(value);
       },
@@ -679,9 +679,8 @@ function SimulatorWidget(node) {
       i2a: function () {
         var sf = carrySet();
         setCarryFlagFromBit7(regA);
-        regA += regA;
-        regA &= simulator.dm;
-        regA |= sf;
+        regA = 2 * (regA & (simulator.dm/2)); // take care for 32bit case
+        regA += sf;
         ROL(regA);
       },
 
@@ -701,8 +700,8 @@ function SimulatorWidget(node) {
         var addr = popWord();
         var value = memory.get(addr);
         setCarryFlagFromBit7(value);
-        value += value;
-        value |= sf;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
+        value += sf;
         memory.storeByte(addr, value);
         ROL(value);
       },
@@ -731,8 +730,8 @@ function SimulatorWidget(node) {
         var addr = (popByte() + regX) & simulator.dm;
         var value = memory.get(addr);
         setCarryFlagFromBit7(value);
-        value += value;
-        value |= sf;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
+        value += sf;
         memory.storeByte(addr, value);
         ROL(value);
       },
@@ -760,8 +759,8 @@ function SimulatorWidget(node) {
         var addr = popWord() + regX;
         var value = memory.get(addr);
         setCarryFlagFromBit7(value);
-        value += value;
-        value |= sf;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
+        value += sf;
         memory.storeByte(addr, value);
         ROL(value);
       },
