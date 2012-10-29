@@ -1705,6 +1705,15 @@ function SimulatorWidget(node) {
       regSP = 0xff;
       regP = 0x30;  // the B bit is absent, but always reads as 1
       updateDebugInfo();
+
+      var l=['ABS','ABSX','ABSY','IND']
+      for(var i in l){
+        if(simulator.aw == simulator.dw){
+          assembler.instructionLength[l[i]] = 2;
+        } else {
+          assembler.instructionLength[l[i]] = 3;
+        }
+      }
     }
 
     function stop() {
@@ -2570,6 +2579,7 @@ function SimulatorWidget(node) {
         return defaultCodePC;
       },
       hexdump: hexdump,
+      instructionLength: instructionLength,
       disassemble: disassemble
     };
   }
