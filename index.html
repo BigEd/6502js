@@ -56,28 +56,15 @@
 
       <div class="notes" style="display: none">Notes:
 
-Memory location $fe contains a new random byte on every instruction.
-Memory location $ff contains the ascii code of the last key pressed.
+For basic operation and 6502 tutorial please see http://skilldrick.github.com/easy6502/
 
-Memory locations $200 to $5ff map to the screen pixels. Different values will
-draw different colour pixels. The colours are:
+This fork models 16bit and 32bit variations on the 6502: see 65Org16 discussions at http://forum.6502.org/viewtopic.php?t=1982
 
-$0: Black
-$1: White
-$2: Red
-$3: Cyan
-$4: Purple
-$5: Green
-$6: Blue
-$7: Yellow
-$8: Orange
-$9: Brown
-$a: Light red
-$b: Dark grey
-$c: Grey
-$d: Light green
-$e: Light blue
-$f: Light grey
+The source for this fork is found at https://github.com/BigEd/6502js
+
+Note that the simulated machine has a memory mapped display, input, and random byte generator.
+
+This fork also implements the WDM opcode: an operand of 0 sends a byte to output.
     </div>
 
     <script src="es5-shim.js"></script>
