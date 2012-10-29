@@ -1828,7 +1828,7 @@ function SimulatorWidget(node) {
           return (nameAndAddr[1]);
         }
       }
-      return -1;
+      return 0x1234;  // unset labels must behave themselves for pre-assembly to work
     }
 
     function displayMessage() {
@@ -2015,15 +2015,8 @@ function SimulatorWidget(node) {
       if (input.match(/^(\*|\w+)\s*=/i)) {
         // equ spotted
         param = input.replace(/^.*=\s*/, "");
-        param = param.replace(/\$/g, "0x");
-        var words=param.match(/(\w+)/g)
-        for(var w=0; w<words.length; w++){
-           if(isNaN(words[w])){
-              re=new RegExp("\\b"+words[w]+"\\b")
-              param = param.replace(re,labels.getPC(words[w]));
-           }
-        }
-        addr = eval(param);
+        addr = evaluate(param);
+
         if (addr < 0 || addr > simulator.ms) {
           message("Unable to relocate code outside memory");
           return false;
@@ -2055,6 +2048,7 @@ function SimulatorWidget(node) {
 
       for (var o = 0; o < Opcodes.length; o++) {
         if (Opcodes[o][0] === command) {
+          // most specific patterns first to avoid false matches; detect zp before abs
           if (checkSingle(param, Opcodes[o][11])) { return true; }
           if (checkIndirect(param, Opcodes[o][8])) { return true; }
           if (checkIndirectX(param, Opcodes[o][9])) { return true; }
@@ -2070,6 +2064,19 @@ function SimulatorWidget(node) {
         }
       }
       return false; // Unknown opcode
+    }
+
+    // helper function to evaluate labels and expressions
+    function evaluate(param) {
+      param = param.replace(/\$/g, "0x");
+      var words = param.match(/(\w+)/g);
+      for(var w = 0; w < words.length; w++) {
+        if(isNaN(words[w])) {
+          re = new RegExp("\\b" + words[w] + "\\b", "g");
+          param = param.replace(re, labels.getPC(words[w]));
+        }
+      }
+      return eval(param);
     }
 
     function DCB(param) {
@@ -2110,7 +2117,7 @@ function SimulatorWidget(node) {
         message("Branch distance " + distance + " is out of range at $" + addr2hex(defaultCodePC-1));
         return false; // out of bounds
       }
-      pushByte((distance + simulator.dm+1)& simulator.dm);
+      pushByte((distance + simulator.dm+1) & simulator.dm);
       return true;
     }
 
@@ -2119,9 +2126,9 @@ function SimulatorWidget(node) {
       var value, label, hilo, addr;
       if (opcode === null) { return false; }
       if (param.match(/^#\$[0-9a-f]+$/i)) {
-        pushByte(opcode);
         value = parseInt(param.replace(/^#\$/, ""), 16);
         if (value < 0 || value > simulator.dm) { return false; }
+        pushByte(opcode);
         pushByte(value);
         return true;
       }
@@ -2212,15 +2219,8 @@ function SimulatorWidget(node) {
     function checkZeroPage(param, opcode) {
       var value;
       if (opcode === null) { return false; }
-      if (param.match(/^\$[0-9a-f]+$/i)) {
-        pushByte(opcode);
-        value = parseInt(param.replace(/^\$/, ""), 16);
-        if (value < 0 || value > simulator.dm) { return false; }
-        pushByte(value);
-        return true;
-      }
-      if (param.match(/^[0-9]+$/i)) {
-        value = parseInt(param, 10);
+      if (param.match(/^.*\w+.*$/i)) {
+        value = evaluate(param);
         if (value < 0 || value > simulator.dm) { return false; }
         pushByte(opcode);
         pushByte(value);
@@ -2231,90 +2231,43 @@ function SimulatorWidget(node) {
 
     // checkAbsoluteX() - Check if param is ABSX and push value
     function checkAbsoluteX(param, opcode) {
-      var number, value, addr;
+      var value;              
       if (opcode === null) { return false; }
       if (param.match(/^.*\w+.*,X$/i)) {
-        pushByte(opcode);
         param = param.replace(/^(.*),X$/i, "$1");
-        param = param.replace(/\$/g, "0x");
-        var words=param.match(/(\w+)/g)
-        for(var w=0; w<words.length; w++){
-           if(isNaN(words[w])){
-              re=new RegExp("\\b"+words[w]+"\\b")
-              param = param.replace(re,labels.getPC(words[w]));
-           }
-        }
-        value = eval(param);
+        value = evaluate(param);
         if (value < 0 || value > simulator.am) { return false; }
+        pushByte(opcode);
         pushWord(value);
         return true;
       }
-
-      if (param.match(/^\w+,X$/i)) {
-        param = param.replace(/,X$/i, "");
-        pushByte(opcode);
-        if (labels.find(param)) {
-          addr = labels.getPC(param);
-          if (addr < 0 || addr > simulator.am) { return false; }
-          pushWord(addr);
-          return true;
-        } else {
-          pushWord(0x1234);
-          return true;
-        }
-      }
-
       return false;
     }
 
     // checkAbsoluteY() - Check if param is ABSY and push value
     function checkAbsoluteY(param, opcode) {
-      var number, value, addr;
+      var value;
       if (opcode === null) { return false; }
-      if (param.match(/^\$[0-9a-f]+,Y$/i)) {
-        pushByte(opcode);
-        number = param.replace(/^\$([0-9a-f]*),Y/i, "$1");
-        value = parseInt(number, 16);
+      if (param.match(/^.*\w+.*,Y$/i)) {
+        param = param.replace(/^(.*),Y$/i, "$1");
+        value = evaluate(param);
         if (value < 0 || value > simulator.am) { return false; }
+        pushByte(opcode);
         pushWord(value);
         return true;
-      }
-
-      // it could be a label too..
-
-      if (param.match(/^\w+,Y$/i)) {
-        param = param.replace(/,Y$/i, "");
-        pushByte(opcode);
-        if (labels.find(param)) {
-          addr = labels.getPC(param);
-          if (addr < 0 || addr > simulator.am) { return false; }
-          pushWord(addr);
-          return true;
-        } else {
-          pushWord(0x1234);
-          return true;
-        }
       }
       return false;
     }
 
     // checkZeroPageX() - Check if param is ZPX and push value
     function checkZeroPageX(param, opcode) {
-      var number, value;
+      var value;
       if (opcode === null) { return false; }
-      if (param.match(/^\$[0-9a-f]+,X/i)) {
-        pushByte(opcode);
-        number = param.replace(/^\$([0-9a-f]+),X/i, "$1");
-        value = parseInt(number, 16);
+      if (param.match(/^.*\w+.*,X$/i)) {
+        param = param.replace(/^(.*),X$/i, "$1");
+        value = evaluate(param);
         if (value < 0 || value > simulator.dm) { return false; }
-        pushByte(value);
-        return true;
-      }
-      if (param.match(/^[0-9]+,X/i)) {
         pushByte(opcode);
-        number = param.replace(/^([0-9]{1,3}),X/i, "$1");
-        value = parseInt(number, 10);
-        if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
         return true;
       }
@@ -2322,21 +2275,13 @@ function SimulatorWidget(node) {
     }
 
     function checkZeroPageY(param, opcode) {
-      var number, value;
+      var value;
       if (opcode === null) { return false; }
-      if (param.match(/^\$[0-9a-f]+,Y/i)) {
-        pushByte(opcode);
-        number = param.replace(/^\$([0-9a-f]+),Y/i, "$1");
-        value = parseInt(number, 16);
+      if (param.match(/^.*\w+.*,Y$/i)) {
+        param = param.replace(/^(.*),Y$/i, "$1");
+        value = evaluate(param);
         if (value < 0 || value > simulator.dm) { return false; }
-        pushByte(value);
-        return true;
-      }
-      if (param.match(/^[0-9]+,Y/i)) {
         pushByte(opcode);
-        number = param.replace(/^([0-9]+),Y/i, "$1");
-        value = parseInt(number, 10);
-        if (value < 0 || value > simulator.dm) { return false; }
         pushByte(value);
         return true;
       }
@@ -2345,32 +2290,14 @@ function SimulatorWidget(node) {
 
     // checkAbsolute() - Check if param is ABS and push value
     function checkAbsolute(param, opcode) {
-      var value, number, addr;
-      if (opcode === null) { return false; }
-      pushByte(opcode);
-      if (param.match(/^\$[0-9a-f]+$/i)) {
-        value = parseInt(param.replace(/^\$/, ""), 16);
+      var value;
+      if (opcode === null) { return false; }  
+      if (param.match(/^.*\w+.*$/i)) {  
+        value = evaluate(param);
         if (value < 0 || value > simulator.am) { return false; }
+        pushByte(opcode);
         pushWord(value);
-        return true;
-      }
-      if (param.match(/^[0-9]+$/i)) {
-        value = parseInt(param, 10);
-        if (value < 0 || value > simulator.am) { return false; }
-        pushWord(value);
-        return(true);
-      }
-      // it could be a label too..
-      if (param.match(/^\w+$/)) {
-        if (labels.find(param)) {
-          addr = (labels.getPC(param));
-          if (addr < 0 || addr > simulator.am) { return false; }
-          pushWord(addr);
-          return true;
-        } else {
-          pushWord(0x1234);
-          return true;
-        }
+        return true; 
       }
       return false;
     }
@@ -2382,10 +2309,11 @@ function SimulatorWidget(node) {
       codeLen++;
     }
 
-    // pushWord() - Push a word using pushByte twice
+    // pushWord() - Push an address value using pushByte twice (or once)
     function pushWord(value) {
-      pushByte(value & simulator.dm);
-      pushByte((value / (simulator.dm+1)) & simulator.dm);
+      pushByte(value);
+      if(simulator.dw != simulator.aw)
+        pushByte(value / (simulator.dm+1));
     }
 
     function openPopup(content, title) {
