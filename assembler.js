@@ -1430,8 +1430,9 @@ function SimulatorWidget(node) {
 
       i42: function () {
         var value = popByte();
-        message(String.fromCharCode(regA));
-        //WDM  -- pseudo op to output a char
+        if (value == 0)
+          message(String.fromCharCode(regA));
+        //WDM  -- pseudo op for emulator: arg 0 to output a char
       },
 
       iec: function () {
