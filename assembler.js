@@ -628,7 +628,7 @@ function SimulatorWidget(node) {
       i20: function () {
         var addr = popWord();
         var currAddr = regPC - 1;
-        if (simulator.dw<32)
+        if (simulator.aw > simulator.dw)
           stackPush(((currAddr >> simulator.dw) & simulator.dm));
         stackPush((currAddr & simulator.dm));
         regPC = addr;
@@ -769,7 +769,7 @@ function SimulatorWidget(node) {
       i40: function () {
         regP = stackPop() | 0x30; // There is no B bit!
         regPC = stackPop();
-        if (simulator.dw<32)
+        if (simulator.aw > simulator.dw)                
           regPC |= stackPop() << simulator.dw;
         //RTI
       },
@@ -898,7 +898,7 @@ function SimulatorWidget(node) {
 
       i60: function () {
         regPC = stackPop();
-        if (simulator.dw<32)
+        if (simulator.aw > simulator.dw)                
           regPC |= stackPop() << simulator.dw;
         regPC += 1;
         //RTS
@@ -1510,7 +1510,7 @@ function SimulatorWidget(node) {
     };
 
     function stackPush(value) {
-      if (simulator.dw<32)
+      if (simulator.aw > simulator.dw)                
         memory.set((regSP & simulator.dm) + (1<<simulator.dw), value & simulator.dm);
       else
         memory.set((regSP & simulator.dm), value & simulator.dm);
@@ -1530,7 +1530,7 @@ function SimulatorWidget(node) {
       } else {
         regSP++;
       }
-      if (simulator.dw<32)
+      if (simulator.aw > simulator.dw)                
         value = memory.get(regSP + (1<<simulator.dw));
       else
         value = memory.get(regSP);
@@ -1544,7 +1544,7 @@ function SimulatorWidget(node) {
 
     // popWord() - Pops a word using popByte() twice
     function popWord() {
-      if (simulator.dw<32)
+      if (simulator.aw > simulator.dw)                
         return popByte() + (popByte() << simulator.dw);
       else
         return popByte();
@@ -1708,7 +1708,7 @@ function SimulatorWidget(node) {
 
       var l=['ABS','ABSX','ABSY','IND']
       for(var i in l){
-        if(simulator.aw == simulator.dw){
+        if (simulator.aw > simulator.dw)                
           assembler.instructionLength[l[i]] = 2;
         } else {
           assembler.instructionLength[l[i]] = 3;
