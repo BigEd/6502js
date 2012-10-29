@@ -2108,14 +2108,12 @@ function SimulatorWidget(node) {
 
       if (param.match(/\w+/)) {
         addr = labels.getPC(param);
-message("branch at "+defaultCodePC.toString(16) +" "+param+" "+("0x"+addr.toString(16)))
       } else {
         pushByte(opcode);
         pushByte(0x00);  // dummy argument to ensure first pass computes correct labels
         return false;
       }
       var distance = addr - defaultCodePC - 2;
-message(distance)
       if (distance < -simulator.dm/2-1 || distance > simulator.dm/2) {
         // This message is only valid in the second pass, and we don't know which pass we're in
         // message("Branch distance " + distance + " is out of range at $" + addr2hex(defaultCodePC-1));
