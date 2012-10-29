@@ -2106,17 +2106,24 @@ function SimulatorWidget(node) {
       var addr;
       if (opcode === null) { return false; }
 
-      addr = -1;
       if (param.match(/\w+/)) {
         addr = labels.getPC(param);
+message("branch at "+defaultCodePC.toString(16) +" "+param+" "+("0x"+addr.toString(16)))
+      } else {
+        pushByte(opcode);
+        pushByte(0x00);  // dummy argument to ensure first pass computes correct labels
+        return false;
       }
-      if (addr === -1) { pushWord(0x00); return false; }
-      pushByte(opcode);
-      var distance = addr - defaultCodePC - 1;
+      var distance = addr - defaultCodePC - 2;
+message(distance)
       if (distance < -simulator.dm/2-1 || distance > simulator.dm/2) {
-        message("Branch distance " + distance + " is out of range at $" + addr2hex(defaultCodePC-1));
-        return false; // out of bounds
+        // This message is only valid in the second pass, and we don't know which pass we're in
+        // message("Branch distance " + distance + " is out of range at $" + addr2hex(defaultCodePC-1));
+        pushByte(opcode);
+        pushByte(0x00);  // dummy argument to ensure first pass computes correct labels
+        return false;
       }
+      pushByte(opcode);
       pushByte((distance + simulator.dm+1) & simulator.dm);
       return true;
     }
