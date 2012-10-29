@@ -2474,7 +2474,7 @@ function SimulatorWidget(node) {
       var byte;
       var modeAndCode;
 
-      while (currentAddress < endAddress - 1) {
+      while (currentAddress < endAddress) {
         inst = createInstruction(currentAddress);
         byte = memory.get(currentAddress);
         inst.addByte(byte);
