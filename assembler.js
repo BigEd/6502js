@@ -307,7 +307,7 @@ function SimulatorWidget(node) {
       } else {
         regP |= 0x02;
       }
-      var signbit=2*(1<<(simulator.dw-2)) // same as 1<<(dw-1) even for dw==32
+      var signbit = 2*(1<<(simulator.dw-2)) // same as 1<<(dw-1) even for dw==32
       if (value & signbit) {
         regP |= signbit;
       } else {
@@ -351,7 +351,7 @@ function SimulatorWidget(node) {
       if (value & signbit) {
         regP |= signbit;
       } else {
-        regP &= ~signbit;   
+        regP &= ~signbit;
       }
       var vbit = signbit/2;
       if (value & vbit) {
@@ -537,7 +537,7 @@ function SimulatorWidget(node) {
         var zp = popByte();
         var value = memory.get(zp);
         setCarryFlagFromBit7(value);
-        value = value << 1;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
         memory.storeByte(zp, value);
         ASL(value);
       },
@@ -554,7 +554,7 @@ function SimulatorWidget(node) {
 
       i0a: function () {
         setCarryFlagFromBit7(regA);
-        regA = (regA << 1) & simulator.dm;
+        regA = 2 * (regA & (simulator.dm/2)); // take care for 32bit case
         ASL(regA);
       },
 
@@ -567,7 +567,7 @@ function SimulatorWidget(node) {
         var addr = popWord();
         var value = memory.get(addr);
         setCarryFlagFromBit7(value);
-        value += value;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
         memory.storeByte(addr, value);
         ASL(value);
       },
@@ -595,7 +595,7 @@ function SimulatorWidget(node) {
         var addr = (popByte() + regX) & simulator.dm;
         var value = memory.get(addr);
         setCarryFlagFromBit7(value);
-        value += value;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
         memory.storeByte(addr, value);
         ASL(value);
       },
@@ -620,7 +620,7 @@ function SimulatorWidget(node) {
         var addr = popWord() + regX;
         var value = memory.get(addr);
         setCarryFlagFromBit7(value);
-        value += value;
+        value = 2 * (value & (simulator.dm/2)); // take care for 32bit case
         memory.storeByte(addr, value);
         ASL(value);
       },
@@ -769,7 +769,7 @@ function SimulatorWidget(node) {
       i40: function () {
         regP = stackPop() | 0x30; // There is no B bit!
         regPC = stackPop();
-        if (simulator.aw > simulator.dw)                
+        if (simulator.aw > simulator.dw)
           regPC |= stackPop() << simulator.dw;
         //RTI
       },
@@ -898,7 +898,7 @@ function SimulatorWidget(node) {
 
       i60: function () {
         regPC = stackPop();
-        if (simulator.aw > simulator.dw)                
+        if (simulator.aw > simulator.dw)
           regPC |= stackPop() << simulator.dw;
         regPC += 1;
         //RTS
@@ -925,7 +925,7 @@ function SimulatorWidget(node) {
         var value = memory.get(addr);
         setCarryFlagFromBit0(value);
         value /= 2; // right shifting a negative 32-bit int gives a negative result
-        value |= 0; // remove fractional part 
+        value |= 0; // remove fractional part
         if (sf) { value |= 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
         memory.storeByte(addr, value);
         ROR(value);
@@ -1414,7 +1414,7 @@ function SimulatorWidget(node) {
       },
 
       ie8: function () {
-        regX==simulator.dm ? regX=0 : regX++;  // cannot simply increment and mask in 32bit case 
+        regX==simulator.dm ? regX=0 : regX++;  // cannot simply increment and mask in 32bit case
         setNVflagsForRegX();
         //INX
       },
@@ -1510,7 +1510,7 @@ function SimulatorWidget(node) {
     };
 
     function stackPush(value) {
-      if (simulator.aw > simulator.dw)                
+      if (simulator.aw > simulator.dw)
         memory.set((regSP & simulator.dm) + (1<<simulator.dw), value & simulator.dm);
       else
         memory.set((regSP & simulator.dm), value & simulator.dm);
@@ -1530,7 +1530,7 @@ function SimulatorWidget(node) {
       } else {
         regSP++;
       }
-      if (simulator.aw > simulator.dw)                
+      if (simulator.aw > simulator.dw)
         value = memory.get(regSP + (1<<simulator.dw));
       else
         value = memory.get(regSP);
@@ -1544,7 +1544,7 @@ function SimulatorWidget(node) {
 
     // popWord() - Pops a word using popByte() twice
     function popWord() {
-      if (simulator.aw > simulator.dw)                
+      if (simulator.aw > simulator.dw)
         return popByte() + (popByte() << simulator.dw);
       else
         return popByte();
@@ -1708,7 +1708,7 @@ function SimulatorWidget(node) {
 
       var l=['ABS','ABSX','ABSY','IND']
       for(var i in l){
-        if (simulator.aw > simulator.dw)                
+        if (simulator.aw > simulator.dw){
           assembler.instructionLength[l[i]] = 2;
         } else {
           assembler.instructionLength[l[i]] = 3;
@@ -2231,7 +2231,7 @@ function SimulatorWidget(node) {
 
     // checkAbsoluteX() - Check if param is ABSX and push value
     function checkAbsoluteX(param, opcode) {
-      var value;              
+      var value;
       if (opcode === null) { return false; }
       if (param.match(/^.*\w+.*,X$/i)) {
         param = param.replace(/^(.*),X$/i, "$1");
@@ -2291,13 +2291,13 @@ function SimulatorWidget(node) {
     // checkAbsolute() - Check if param is ABS and push value
     function checkAbsolute(param, opcode) {
       var value;
-      if (opcode === null) { return false; }  
-      if (param.match(/^.*\w+.*$/i)) {  
+      if (opcode === null) { return false; }
+      if (param.match(/^.*\w+.*$/i)) {
         value = evaluate(param);
         if (value < 0 || value > simulator.am) { return false; }
         pushByte(opcode);
         pushWord(value);
-        return true; 
+        return true;
       }
       return false;
     }
