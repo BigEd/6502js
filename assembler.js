@@ -2222,22 +2222,17 @@ function SimulatorWidget(node) {
 
     // checkAbsoluteX() - Check if param is ABSX and push value
     function checkAbsoluteX(param, opcode) {
-console.log("checkAbsoluteX",param, opcode)
       var number, value, addr;
       if (opcode === null) { return false; }
       if (param.match(/^.*\w+.*,X$/i)) {
-console.log("OK:",param, opcode)
         pushByte(opcode);
         param = param.replace(/^(.*),X$/i, "$1");
         param = param.replace(/\$/g, "0x");
-console.log("pre:",param)
         var words=param.match(/(\w+)/g)
         for(var w=0; w<words.length; w++){
-console.log("w:",words[w])
            if(isNaN(words[w])){
               re=new RegExp("\\b"+words[w]+"\\b")
               param = param.replace(re,labels.getPC(words[w]));
-console.log("subs:",param, labels.getPC(words[w]))
            }
         }
         value = eval(param);
