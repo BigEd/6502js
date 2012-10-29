@@ -1708,9 +1708,9 @@ function SimulatorWidget(node) {
       var l=['ABS','ABSX','ABSY','IND']
       for(var i in l){
         if (simulator.aw > simulator.dw){
-          assembler.instructionLength[l[i]] = 2;
-        } else {
           assembler.instructionLength[l[i]] = 3;
+        } else {
+          assembler.instructionLength[l[i]] = 2;
         }
       }
     }
@@ -2311,7 +2311,7 @@ function SimulatorWidget(node) {
     // pushWord() - Push an address value using pushByte twice (or once)
     function pushWord(value) {
       pushByte(value);
-      if(simulator.dw != simulator.aw)
+      if(simulator.aw > simulator.dw)
         pushByte(value / (simulator.dm+1));
     }
 
