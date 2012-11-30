@@ -236,7 +236,9 @@ function SimulatorWidget(node) {
     // storeByte() - Poke a byte, don't touch any registers
 
     function storeByte(addr, value) {
-      set(addr, value & simulator.dm);
+      if (simulator.aw > simulator.dw)
+        value &= simulator.dm;
+      set(addr, value);
       if ((addr >= 0x200) && (addr <= 0x5ff)) {
         display.updatePixel(addr);
       }
@@ -925,7 +927,7 @@ function SimulatorWidget(node) {
         setCarryFlagFromBit0(value);
         value /= 2; // right shifting a negative 32-bit int gives a negative result
         value |= 0; // remove fractional part
-        if (sf) { value |= 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
+        if (sf) { value += 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
         memory.storeByte(addr, value);
         ROR(value);
       },
@@ -947,7 +949,7 @@ function SimulatorWidget(node) {
         setCarryFlagFromBit0(regA);
         regA /= 2; // right shifting a negative 32-bit int gives a negative result
         regA |= 0; // remove fractional part
-        if (sf) { regA |= 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
+        if (sf) { regA += 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
         ROR(regA);
       },
 
@@ -970,7 +972,7 @@ function SimulatorWidget(node) {
         setCarryFlagFromBit0(value);
         value /= 2; // right shifting a negative 32-bit int gives a negative result
         value |= 0; // remove fractional part
-        if (sf) { value |= 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
+        if (sf) { value += 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
         memory.storeByte(addr, value);
         ROR(value);
       },
@@ -1003,7 +1005,7 @@ function SimulatorWidget(node) {
         setCarryFlagFromBit0(value);
         value /= 2; // right shifting a negative 32-bit int gives a negative result
         value |= 0; // remove fractional part
-        if (sf) { value |= 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
+        if (sf) { value += 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
         memory.storeByte(addr, value);
         ROR(value);
       },
@@ -1035,7 +1037,7 @@ function SimulatorWidget(node) {
         setCarryFlagFromBit0(value);
         value /= 2; // right shifting a negative 32-bit int gives a negative result
         value |= 0; // remove fractional part
-        if (sf) { value |= 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
+        if (sf) { value += 2*(1<<(simulator.dw-2)); } // sign bit, same as 1<<(dw-1) even for dw==32
         memory.storeByte(addr, value);
         ROR(value);
       },
