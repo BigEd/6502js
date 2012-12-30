@@ -1950,8 +1950,8 @@ function SimulatorWidget(node) {
       codeLen = 0;
       for (var i = 0; i < lines.length; i++) {
         if (!assembleLine(lines[i], i)) {
-          codeAssembleddOK = false;
           message("line "+i+" does not assemble: "+lines[i]);
+          codeAssembledOK = false;
           break;
         }
       }
