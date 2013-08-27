@@ -2109,7 +2109,7 @@ function SimulatorWidget(node) {
       if (opcode === null) { return false; }
 
       if (param.match(/\w+/)) {
-        addr = labels.getPC(param);
+        addr = evaluate(param);
       } else {
         pushByte(opcode);
         pushByte(0x00);  // dummy argument to ensure first pass computes correct labels
