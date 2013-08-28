@@ -219,7 +219,7 @@ function SimulatorWidget(node) {
   }
 
   function Memory() {
-    var memArray = new Array(0x600);
+    var memArray = function(){var a = new Array(0x10000); for(var i = a.length; i--;) a[i] = 0; return a}()
 
     function set(addr, val) {
       return memArray[addr] = val;
